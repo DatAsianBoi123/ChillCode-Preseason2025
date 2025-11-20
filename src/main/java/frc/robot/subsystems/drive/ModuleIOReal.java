@@ -177,10 +177,11 @@ public class ModuleIOReal implements ModuleIO {
 
         // Create odometry queues
         timestampQueue = SparkOdometryThread.getInstance().makeTimestampQueue();
-        drivePositionQueue = SparkOdometryThread.getInstance().registerSignal(() -> drivePosition.getValueAsDouble());
-        turnPositionQueue = SparkOdometryThread.getInstance().registerSignal(turnSpark, () -> turnEncoder.getPosition());
+        StatusSignal<Angle> drivePositionClone = drivePosition.clone();
+        drivePositionQueue = SparkOdometryThread.getInstance().registerSignal(() -> drivePositionClone.refresh().getValueAsDouble());
+        turnPositionQueue = SparkOdometryThread.getInstance().registerSignal(turnSpark, turnEncoder::getPosition);
 
-        BaseStatusSignal.setUpdateFrequencyForAll(Drive.ODOMETRY_FREQUENCY, drivePosition);
+        BaseStatusSignal.setUpdateFrequencyForAll(odometryFrequency, drivePosition);
         BaseStatusSignal.setUpdateFrequencyForAll(
             50.0,
             driveVelocity,
@@ -247,8 +248,7 @@ public class ModuleIOReal implements ModuleIO {
 
     @Override
     public void setTurnPosition(Rotation2d rotation) {
-        double setpoint = MathUtil.inputModulus(
-                rotation.plus(zeroRotation).getRadians(), turnPIDMinInput, turnPIDMaxInput);
+        double setpoint = MathUtil.inputModulus(rotation.plus(zeroRotation).getRadians(), turnPIDMinInput, turnPIDMaxInput);
         turnController.setReference(setpoint, ControlType.kPosition);
     }
 }

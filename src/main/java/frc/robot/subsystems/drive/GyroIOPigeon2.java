@@ -17,14 +17,11 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 
-import static edu.wpi.first.units.Units.Degrees;
-
 import java.util.Queue;
 
 /** IO implementation for Pigeon 2. */
 public class GyroIOPigeon2 implements GyroIO {
-  private final Pigeon2 pigeon =
-      new Pigeon2(DriveConstants.pigeonCanId);
+  private final Pigeon2 pigeon = new Pigeon2(DriveConstants.pigeonCanId);
   private final StatusSignal<Angle> yaw = pigeon.getYaw();
   private final Queue<Double> yawPositionQueue;
   private final Queue<Double> yawTimestampQueue;
@@ -35,11 +32,12 @@ public class GyroIOPigeon2 implements GyroIO {
     pigeon.getConfigurator().apply(new Pigeon2Configuration());
 
     pigeon.getConfigurator().setYaw(0.0);
-    yaw.setUpdateFrequency(Drive.ODOMETRY_FREQUENCY);
+    yaw.setUpdateFrequency(DriveConstants.odometryFrequency);
     yawVelocity.setUpdateFrequency(50.0);
     pigeon.optimizeBusUtilization();
     yawTimestampQueue = SparkOdometryThread.getInstance().makeTimestampQueue();
-    yawPositionQueue = SparkOdometryThread.getInstance().registerSignal(() -> yaw.getValue().in(Degrees));
+    StatusSignal<Angle> yawClone = yaw.clone();
+    yawPositionQueue = SparkOdometryThread.getInstance().registerSignal(() -> yawClone.refresh().getValueAsDouble());
   }
 
   @Override
